@@ -1,0 +1,341 @@
+suspend функцию можно только запустить из другой суспенд функции
+или из корутин
+для того чтоб создать корутину необход воспользоваться билдерами
+runBlocking - блокирующе запускает корутину в текущем потоке
+(обычно в тестах используется)
+launch - запускает корутину на выпонлнение
+async - запускает кор и позволяет получить результат по окончании выполнения
+
+Запуск корутины
+onCreate(){
+    launch{
+        makeAction()
+    }
+}
+
+Structured concurrency(SC)
+кто может отменить выполнение корутины
+привязано ли выполнение к комуто ж.ц
+как будут обпабатываться ошибки внутри корутины
+как кор взаимодействуют с дочерними или родительскими корутинами
+
+SC вводит понятие Coroutine scope
+
+позволяет отслеживать выполняемые в нем корутины
+внутри одного скоупа мб разное кол-во корутин
+позволяет отменить выполнение корутин
+оповещается при возникновении ошибки
+
+Для запуска необхоимо подключить библиотку в проект
+для запуска необходим какой то скоп
+
+    GlobalScope.launch{
+}
+самый простой способ запустить корутино, глобальный виден отовсюду
+что плохо по инкапсуляции
+
+создадим свой скоп
+//запуск коротины на главном потоке
+private val fragmentScope = CoroutineScope(Dispetchers.Main)
+
+fragment scope.launch {
+    Log.d("tag", "Thread.currenc.name")
+    //тут можно запускать suspend функции
+    //например delay(100)
+}
+
+чтобы обычную функцию сделать suspend необходимо ее запустить
+с контекстом
+withContext(Dispatchers.Default){
+пишем код
+}
+
+Dispatchers
+Default
+- max pool size = кол ядер ЦПУ
+- используется для ресурсоемких задач
+
+IO
+- max pool size = 64
+- используется для IO задач
+
+Main - выполнение на главном потоке
+Unconfined - не переключается между потоками
+Custom
+
+получаем результат выполнения корутин
+
+val fragmentIOScope = CoroutineScope(Dispatchers.IO)
+ fragmentIOScope.launch{
+ //тут например пожно можно еще добавить вычисление числа
+ паралельно
+ val defferedResult = fragmentIOScope.async{//можно не указываьть fragmentIOScope
+    calculateNumber()
+ }
+ val defferedResult2 = fragmentIOScope.async{//можно не указываьть fragmentIOScope
+     calculateNumber()
+  }
+
+ val result = defferedResult.await()
+ val result2 = defferedResult.await()
+ }
+
+private suspend fun calculateNumber():BigInteger{
+ return withContext(Dispatechers.Default){
+    Log.d("TAG", "currencyThread")
+    BigInteger.probablyPrime(4000, Random.asJavaRandom())
+ }
+}
+
+SUSPEND FUNC
+
+val scope = CoroutineScope(Dispatchers.Main)
+
+scope.launch{
+    showLoading(true)
+    makeAction() //suspend
+    showLoading(false)
+}
+
+Continuation
+public interface Continuation<in T>{
+    public val context:CoroutinesContext
+    public fun resumeWith(result:Result<T>)
+}
+
+при компиляции scope.launch{...} преобразовывается в
+объект класса continuation в методе  invokeSuspend будет происходить
+основная логика
+
+class Generation ...{
+    int label = 0
+    void invokeSuspend(){
+        switch(label){
+            case 0:{
+                showloading(true)
+                label = 1;
+                makeAction(this) //suspend function
+                return
+            }
+            case 1: {
+                showloading(false)
+            }
+            default: {//exception}
+        }
+    }
+}
+
+suspend fun makeAction(){
+    withContext(Dispatchers.Default){
+    //heavy operation
+    }
+}
+
+void makeAction(Continuation completion){
+    val continuation = getContinuation()
+    switch(continuation.label){
+        case 0:{
+            //heavy operation
+            return
+        }
+        case 1:{
+            completion.resume()// notify parent suspend function
+            return
+        }
+        default: {//exception}
+    }
+}
+
+для преобразование кода с колбэками в корутины необходимо
+вызвать функцию suspendCoroutine (принимает блок кода continuation) и
+ указать тип возвращаемого
+
+успешное выполнение
+continuation.resume()
+с ошибкой
+continuation.resumeException()
+оборачиваем функцию в try catch
+fragmentScope.launch{
+    try {
+    val users = searchUsers()
+    show(users)
+    }catch(t:Trowable){
+    Log.d("Tag", "e", t)
+    }
+}
+
+функция всегда должна завершиться либо
+continuation.resume()
+либо
+continuation.resumeException()
+
+
+COROUTINESCOPE
+КОРОУТИНА переходит в течении работы в разное состояния выполняется,
+отменена, выполнилась
+
+каждая корутина имплементирует интерфейс JOB который определяет
+состояние корутины в определеннный момент времени
+
+с помощью билдера можно получить инстанс жоба
+val job = scope.launch{}
+job.isComleted
+job.isActive
+job.isCancelled
+job.join //suspend
+
+public interface CoroutineScope{
+    public val coroutineContext: CoroutineContext(мапа ключ, значение)
+}
+
+содержит:
+Job,
+Dispatcher,
+CoroutineExceptionHandler,
+объект, имплементирующий CoroutineContext.Element
+
+Отмена и обработка ошибок в корутинах
+
+1й метод заключить suspend функцию которая может бросить исключение
+scope.launch{
+    try{
+        error("test")
+    }catch(t){
+        ловим ошибку
+    }
+}
+
+2й метод использовать coroutineExceptionHandler
+val errorHandler = CoroutineExceptionHandler{
+    coroutineContext, throwable ->
+        обработка ошибки
+}
+
+scope = CoroutineScope(Dispatchers.Main + errorHandler)
+
+Обработка ошибки в корутинах:
+1. Континуашен возвращает результат ошибки
+2. Оповещается родительский job
+3. Родительский job отменяет дочерние корутины
+4. В coroutineContext у scope проверяется наличие exception handler
+5. Обработка исключения.
+
+SupervisorJob - это job отличается от обычно тем, что при
+возникновении ошибки в дочерней не происходит отмены родительского job
+то есть когда дочерняя корутина выолняется в скопе буедт отменена
+с ошибкой то джоба скоупа не будет отменена и не будут отменены все дочерние
+корутины которые до этого выполнялись в скоупе, корутина теперь не будет
+влиять на соседние запущениые корутины в скопе
+
+scope = CoroutineScope(SupervisorJob+Dispatchers.Main + errorHandler)
+
+Отмена корутин
+scope.cancel() - отменит внутри себя job у скоп, а joba скопа отменит
+ все дочерние корутины, после отмены в скопе уже нельзя ничего запустить
+поэтому это не лучшее решении
+
+scope.coroutineContext.cancelChildren() - для этого способа необходимо
+писать код так чтобы можно было отменить выполнение кода
+scope.launch{
+    var i = 0
+    withContext(Dispetchers.Default){
+        while(true) { - тут пока не поддерживается отмена
+        Thread.sleep(500)
+        Log.d("ErrorCancellFragmnet", log $i")
+        i++
+        }
+    }
+}
+
+while(isActive) - например так, отмена
+либо
+while(true) {
+    delay(500) - тут будет отмена так как это функция реализована внутри
+     этого
+    метода
+
+либо
+fun cancellableExample(){
+    scope.launch{
+            withContext(Dispetchers.Default){
+            suspendCancellableCoroutine<Unit>{ continuation ->
+                continuation.invokeOnCancellation{
+                когда произойдет отмена выполнится этот блок кода
+                и он непрервед код написанный ниже
+                }
+                var i = 0
+               while(true) {
+               Thread.sleep(500)
+               Log.d("ErrorCancellFragmnet", log $i")
+               i++
+               }
+            }
+        }
+    }
+}
+
+еще один способ отмены исползовать метод yield
+
+писать код так чтобы можно было отменить выполнение кода
+scope.launch{
+    withContext(Dispetchers.Default){
+    var i = 0
+        while(true) {
+        yield() при вызове проверит является ли ваша коротина активной
+         иначе выбросит эксепшен
+        Thread.sleep(500)
+        Log.d("ErrorCancellFragmnet", log $i")
+        i++
+        }
+    }
+}
+
+Корутины в андроид
+lifeCycleScope связаны с lifуСycleOwner которые используются в фрагментах
+
+когда у фрагмента будет вызван onDestroy корутина будет тоже отменена
+lifeCycleScope.launch{
+
+}
+тоже самое есть и у вьюлайфсайкловнера
+когда будет вызван onDestroyView корутина отменена
+viewLifecycleOwner.lifeCycleScope.launch{
+
+}
+по умолчанию никто не обрабатывет ошибки, есть супервайзер но нет эрорХндлера
+в viewLifecycleOwner задать можно следующим образом ланчер принимает корутин
+контекст а значит сюда можно передать диспетчера, errorHandler и т.д.:
+viewLifecycleOwner.lifeCycleScope.launch(
+    CoroutineExceptionHandler()
+){
+}
+
+viewModel так же имеет viewModelScope супервайзер и диспетчер
+этот скоуп буде отменен когда у вьюмодели будет вызван метод onCleared
+в этом случае не нужно вручную отменять все корутины
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

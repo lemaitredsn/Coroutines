@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/authFragment">
+
+    <fragment
+        android:id="@+id/authFragment"
+        android:name="com.skillbox.github.ui.auth.AuthFragment"
+        android:label="AuthFragment"
+        tools:layout="@layout/fragment_auth">
+        <action
+            android:id="@+id/action_authFragment_to_mainFragment"
+            app:destination="@id/mainFragment"
+            app:popUpTo="@id/authFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+    <fragment
+        android:id="@+id/mainFragment"
+        android:name="com.skillbox.github.ui.main.MainFragment"
+        android:label="MainFragment"
+        tools:layout="@layout/fragment_main">
+        <action
+            android:id="@+id/action_mainFragment_to_currentUserFragment"
+            app:destination="@id/currentUserFragment" />
+        <action
+            android:id="@+id/action_mainFragment_to_repositoryListFragment"
+            app:destination="@id/repositoryListFragment" />
+        <action
+            android:id="@+id/action_mainFragment_to_repositoryListStarred"
+            app:destination="@id/repositoryListStarred" />
+    </fragment>
+    <fragment
+        android:id="@+id/currentUserFragment"
+        android:name="com.skillbox.github.ui.current_user.CurrentUserFragment"
+        android:label="CurrentUserFragment" />
+    <fragment
+        android:id="@+id/repositoryListFragment"
+        android:name="com.skillbox.github.ui.repository_list.RepositoryListFragment"
+        android:label="RepositoryListFragment" >
+        <action
+            android:id="@+id/action_repositoryListFragment_to_detailRepositoryFragment"
+            app:destination="@id/detailRepositoryFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/detailRepositoryFragment"
+        android:name="com.skillbox.github.ui.repository_detail.DetailRepositoryFragment"
+        android:label="DetailRepositoryFragment" >
+        <argument
+            android:name="avatarLink"
+            app:argType="string" />
+        <argument
+            android:name="id"
+            app:argType="integer" />
+        <argument android:name="name"
+            app:argType="string" />
+        <argument android:name="loginOwner"
+            app:argType="string" />
+    </fragment>
+    <fragment
+        android:id="@+id/repositoryListStarred"
+        android:name="com.skillbox.github.ui.repository_starred.RepositoryListStarred"
+        android:label="RepositoryListStarred" />
+</navigation>

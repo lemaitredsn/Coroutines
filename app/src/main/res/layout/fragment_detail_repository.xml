@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/darker_gray"
+    android:layout_margin="8dp"
+    >
+
+    <ImageView
+        android:id="@+id/avatarImageViewDetail"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:scaleType="centerCrop"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:src="@tools:sample/avatars" />
+
+    <TextView
+        android:id="@+id/nameRepositoryTextViewDetail"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/avatarImageViewDetail"
+        tools:text="name"
+        android:textSize="16sp"
+        android:textColor="@android:color/black"
+        android:layout_marginStart="8dp"
+        />
+
+    <TextView
+        android:id="@+id/idRepositoryTextViewDetail"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@id/nameRepositoryTextViewDetail"
+        app:layout_constraintTop_toBottomOf="@id/nameRepositoryTextViewDetail"
+        android:textColor="@android:color/black"
+        android:textSize="16sp"
+        tools:text="id"
+        />
+
+    <TextView
+        android:id="@+id/loginOwnerRepTextViewDetail"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@id/nameRepositoryTextViewDetail"
+        app:layout_constraintTop_toBottomOf="@id/idRepositoryTextViewDetail"
+        android:textColor="@android:color/black"
+        android:textSize="16sp"
+        tools:text="login owner"
+        />
+
+    <ImageButton
+        android:id="@+id/starButtonDetailRep"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:background="@android:color/transparent"
+        android:src="@drawable/ic_star"
+        android:tint="@android:color/white"
+        android:scaleType="centerCrop"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="@id/avatarImageViewDetail"
+        android:layout_margin="10dp"
+        />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
